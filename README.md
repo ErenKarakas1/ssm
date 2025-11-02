@@ -1,3 +1,4 @@
+# Simple Snippet Manager
 
 ## Installation
 
