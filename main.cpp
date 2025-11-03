@@ -18,11 +18,11 @@ int main(int argc, char* argv[]) {
             .arg(arg("<NAME>")
                 .about("Name of the snippet to remove")))
         .subcommand(Command("get", "Get a snippet's content")
-            .arg(arg("<NAME>")
-                .about("Name of the snippet")))
+            .arg(arg("<SNIPPET>")
+                .about("Name or number of the snippet to get")))
         .subcommand(Command("edit", "Edit a snippet")
-            .arg(arg("<NAME>")
-                .about("Name of the snippet to edit")))
+            .arg(arg("<SNIPPET>")
+                .about("Name or number of the snippet to edit")))
         .arg(arg("-h --help")
             .about("Show this help message"));
 
@@ -55,12 +55,22 @@ int main(int argc, char* argv[]) {
             return ssm::remove_snippet(name) ? 0 : 1;
         }
         if (subcmd_name == "get") {
-            const std::string name = *subcmd_matches->get_one("NAME");
-            return ssm::get_snippet(name) ? 0 : 1;
+            if (const auto number_opt = subcmd_matches->get_one<int>("SNIPPET"); number_opt.has_value()) {
+                return ssm::get_snippet(*number_opt) ? 0 : 1;
+            }
+            if (const auto name_opt = subcmd_matches->get_one("SNIPPET"); name_opt.has_value()) {
+                return ssm::get_snippet(*name_opt) ? 0 : 1;
+            }
+            UNREACHABLE();
         }
         if (subcmd_name == "edit") {
-            const std::string name = *subcmd_matches->get_one("NAME");
-            return ssm::edit_snippet(name) ? 0 : 1;
+            if (const auto number_opt = subcmd_matches->get_one<int>("SNIPPET"); number_opt.has_value()) {
+                return ssm::edit_snippet(*number_opt) ? 0 : 1;
+            }
+            if (const auto name_opt = subcmd_matches->get_one("SNIPPET"); name_opt.has_value()) {
+                return ssm::edit_snippet(*name_opt) ? 0 : 1;
+            }
+            UNREACHABLE();
         }
 
         std::println(stderr, "Unknown subcommand: {}", subcmd_name);
