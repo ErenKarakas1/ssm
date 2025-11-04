@@ -106,6 +106,11 @@ bool edit_snippet_impl(const fs::path& file) {
 namespace ssm {
 
 bool create_snippet(const std::string_view name) {
+    if (name.empty()) {
+        std::println(stderr, "Snippet name cannot be empty");
+        return false;
+    }
+
     const auto dir_opt = get_snippet_dir();
     if (!dir_opt.has_value()) return false;
     const fs::path& dir = *dir_opt;
@@ -141,6 +146,11 @@ void list_snippets() {
 }
 
 bool remove_snippet(const std::string_view name) {
+    if (name.empty()) {
+        std::println(stderr, "Snippet name cannot be empty");
+        return false;
+    }
+
     const auto dir_opt = ensure_snippet_dir();
     if (!dir_opt.has_value()) return false;
 
@@ -157,8 +167,14 @@ bool remove_snippet(const std::string_view name) {
 }
 
 bool get_snippet(const std::string_view name) {
+    if (name.empty()) {
+        std::println(stderr, "Snippet name cannot be empty");
+        return false;
+    }
+
     const auto dir_opt = ensure_snippet_dir();
     if (!dir_opt.has_value()) return false;
+
     return get_snippet_impl(*dir_opt / name);
 }
 
@@ -177,8 +193,14 @@ bool get_snippet(const int number) {
 }
 
 bool edit_snippet(const std::string_view name) {
+    if (name.empty()) {
+        std::println(stderr, "Snippet name cannot be empty");
+        return false;
+    }
+
     const auto dir_opt = ensure_snippet_dir();
     if (!dir_opt.has_value()) return false;
+
     return edit_snippet_impl(*dir_opt / name);
 }
 

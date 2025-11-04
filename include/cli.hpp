@@ -221,6 +221,7 @@ constexpr Arg arg(std::string_view spec) {
 class ArgMatches {
 public:
     ArgMatches() = default;
+    ~ArgMatches() = default;
 
     ArgMatches(const ArgMatches& other)
         : flags_(other.flags_), values_(other.values_), subcommand_name_(other.subcommand_name_) {
@@ -229,7 +230,7 @@ public:
         }
     }
 
-    ArgMatches(ArgMatches&&) = default;
+    ArgMatches(ArgMatches&&) noexcept = default;
 
     ArgMatches& operator=(const ArgMatches& other) {
         if (this != &other) {
@@ -245,7 +246,7 @@ public:
         return *this;
     }
 
-    ArgMatches& operator=(ArgMatches&&) = default;
+    ArgMatches& operator=(ArgMatches&&) noexcept = default;
 
     bool get_flag(const std::string& name) const {
         const auto it = flags_.find(name);
@@ -261,16 +262,24 @@ public:
         return parse_value<T>(it->second.front());
     }
 
-    [[nodiscard]] std::vector<std::string> get_many(const std::string& name) const {
+    template <typename T = std::string>
+    [[nodiscard]] std::vector<T> get_many(const std::string& name) const {
         const auto it = values_.find(name);
         if (it == values_.end() || it->second.empty()) {
             return {};
         }
-        return it->second;
+        std::vector<T> result;
+        result.reserve(it->second.size());
+        for (const auto& val_str : it->second) {
+            if (const auto parsed = parse_value<T>(val_str); parsed.has_value()) {
+                result.push_back(*parsed);
+            }
+        }
+        return result;
     }
 
     [[nodiscard]] std::optional<std::pair<std::string, std::unique_ptr<ArgMatches>>> subcommand() const {
-        if (subcommand_name_.empty()) {
+        if (subcommand_name_.empty() || subcommand_matches_ == nullptr) {
             return std::nullopt;
         }
         return std::make_pair(subcommand_name_, std::make_unique<ArgMatches>(*subcommand_matches_));
@@ -328,15 +337,15 @@ struct ParseError {
         return type != ParseErrorType::None;
     }
 
-    static ParseError None() {
+    static constexpr ParseError None() {
         return {.type = ParseErrorType::None, .message = ""};
     }
 
-    static ParseError MissingRequiredArgument(const std::string& cmd_name, const std::string& arg_name) {
+    static constexpr ParseError MissingRequiredArgument(const std::string& cmd_name, const std::string& arg_name) {
         return {.type = ParseErrorType::MissingRequiredArgument, .message = std::format("Missing required argument '{}' for command '{}'", arg_name, cmd_name)};
     }
 
-    static ParseError MissingRequiredSubcommand(const std::string& cmd_name) {
+    static constexpr ParseError MissingRequiredSubcommand(const std::string& cmd_name) {
         return {.type = ParseErrorType::MissingRequiredSubcommand, .message = std::format("Missing required subcommand for command '{}'", cmd_name)};
     }
 };
@@ -348,14 +357,21 @@ struct ParseResult {
 
 class Command {
 public:
-    explicit Command(const std::string_view name, const std::string_view description = "")
+    explicit Command(const std::string_view name, const std::string_view description = "", const bool help_arg = true)
         : name_(name), description_(description) {
         ASSERT(!name_.empty(), "Command name cannot be empty");
+
+        if (help_arg) {
+            this->arg(cli::arg("-h --help").about("Show this help message"));
+        }
     }
 
-    Command& subcommand(const Command& cmd) {
+    Command& subcommand(Command cmd) {
         if (cmd.name().size() > max_cmd_len) max_cmd_len = cmd.name().size();
-        subcommands_.push_back(cmd);
+
+        cmd.parent_cmd_ = parent_cmd_.empty() ? name_ : std::format("{} {}", parent_cmd_, name_);
+
+        subcommands_.push_back(MOVE(cmd));
         return *this;
     }
 
@@ -427,7 +443,15 @@ public:
     }
 
     void print_help() const {
-        std::print("Usage: {}", name_);
+        if (!description_.empty()) {
+            std::println("{}", description_);
+        }
+
+        std::print("Usage: ");
+        if (!parent_cmd_.empty()) {
+            std::print("{} ", parent_cmd_);
+        }
+        std::print("{}", name_);
 
         for (const Arg& arg : args_) {
             if (arg.type() == ArgType::Positional) {
@@ -456,11 +480,6 @@ public:
         }
 
         std::println();
-        if (!description_.empty()) {
-            std::print("{}", description_);
-        }
-        std::println();
-
         if (!subcommands_.empty()) {
             std::println("\nCommands:");
             for (const Command& cmd : subcommands_) {
@@ -517,6 +536,7 @@ public:
 private:
     std::string name_;
     std::string description_;
+    std::string parent_cmd_;
 
     std::vector<Command> subcommands_;
     std::vector<Arg> args_;
@@ -525,17 +545,17 @@ private:
     std::size_t max_cmd_len = 0;
     bool subcommand_required_ = false;
 
-    static constexpr std::string to_formatted(const ValueType& var) {
-        static_assert(std::variant_size_v<ValueType> == 7, "ValueType variant size changed, update to_formatted accordingly");
+    static constexpr std::string to_formatted(const ValueType& var, const bool quoted = true) {
+        static_assert(std::variant_size_v<ValueType> == 7, "ValueType variant size changed");
         switch (var.index()) {
         case 0: return "";
-        case 1: return std::format("'{}'", *std::get_if<char>(&var));
-        case 2: return std::format("\"{}\"", *std::get_if<std::string>(&var));
-        case 3: return std::format("{}", *std::get_if<bool>(&var) ? "true" : "false");
+        case 1: return quoted ? std::format("'{}'", *std::get_if<char>(&var)) : std::format("{}", *std::get_if<char>(&var));
+        case 2: return quoted ? std::format("\"{}\"", *std::get_if<std::string>(&var)) : *std::get_if<std::string>(&var);
+        case 3: return *std::get_if<bool>(&var) ? "true" : "false";
         case 4: return std::format("{}", *std::get_if<i64>(&var));
         case 5: return std::format("{}", *std::get_if<u64>(&var));
         case 6: return std::format("{}", *std::get_if<f64>(&var));
-        default: UNREACHABLE();
+        default: UNREACHABLE(); return "";
         }
     }
 
@@ -546,6 +566,11 @@ private:
 
         while (current_argc > 0) {
             const std::string_view arg = *current_argv;
+
+            if (arg == "--help" || arg == "-h") {
+                matches.set_flag("help", true);
+                return {.matches = matches, .error = ParseError::None()};
+            }
 
             // Check for subcommands first
             for (const auto& subcmd : subcommands_) {
@@ -591,6 +616,18 @@ private:
             }
 
             shift(current_argc, current_argv);
+        }
+
+        for (const Arg& arg : args_) {
+            if (arg.name() == "help") continue; // Skip help flag
+
+            if (arg.type() == ArgType::Flag) {
+                if (!matches.get_flag(arg.name()) && std::holds_alternative<bool>(arg.default_value())) {
+                    matches.set_flag(arg.name(), *std::get_if<bool>(&arg.default_value()));
+                }
+            } else if (!matches.get_one<std::string>(arg.name()).has_value() && !std::holds_alternative<std::monostate>(arg.default_value())) {
+                matches.add_value(arg.name(), to_formatted(arg.default_value(), false));
+            }
         }
 
         // Validate required arguments

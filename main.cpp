@@ -10,6 +10,7 @@ using utils::cli::arg;
 
 int main(int argc, char* argv[]) {
     const Command app = Command("ssm", "Simple Snippet Manager")
+        .subcommand_required()
         .subcommand(Command("new", "Create a new snippet")
             .arg(arg("<NAME>")
                 .about("Name of the snippet")))
@@ -22,9 +23,7 @@ int main(int argc, char* argv[]) {
                 .about("Name or number of the snippet to get")))
         .subcommand(Command("edit", "Edit a snippet")
             .arg(arg("<SNIPPET>")
-                .about("Name or number of the snippet to edit")))
-        .arg(arg("-h --help")
-            .about("Show this help message"));
+                .about("Name or number of the snippet to edit")));
 
     const auto [matches, err] = app.get_matches(argc, argv);
 
@@ -41,6 +40,15 @@ int main(int argc, char* argv[]) {
 
     if (matches.subcommand().has_value()) {
         const auto [subcmd_name, subcmd_matches] = *matches.subcommand();
+
+        if (subcmd_matches->get_flag("help")) {
+            for (const Command& subcmd : app.subcommands()) {
+                if (subcmd.name() == subcmd_name) {
+                    subcmd.print_help();
+                    return 0;
+                }
+            }
+        }
 
         if (subcmd_name == "new") {
             const std::string name = *subcmd_matches->get_one("NAME");

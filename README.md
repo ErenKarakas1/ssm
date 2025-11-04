@@ -3,8 +3,9 @@
 ## Usage
 
 ```bash
-Usage: ssm <COMMAND> [OPTIONS]
+$ ssm --help
 Simple Snippet Manager
+Usage: ssm <COMMAND> [OPTIONS]
 
 Commands:
     new     Create a new snippet
@@ -12,6 +13,17 @@ Commands:
     rm      Remove a snippet
     get     Get a snippet's content
     edit    Edit a snippet
+
+Options:
+    -h, --help    Show this help message
+```
+
+Subcommands also have help messages.
+
+```bash
+$ ssm new --help
+Create a new snippet
+Usage: ssm new <NAME> [OPTIONS]
 
 Options:
     -h, --help    Show this help message
