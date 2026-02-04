@@ -11,6 +11,7 @@ using utils::cli::arg;
 int main(int argc, char* argv[]) {
     const Command app = Command("ssm", "Simple Snippet Manager")
         .subcommand_required()
+        .subcommand(Command("init", "Initialize ssm directory and database"))
         .subcommand(Command("new", "Create a new snippet")
             .arg(arg("<NAME>")
                 .about("Name of the snippet")))
@@ -50,6 +51,9 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        if (subcmd_name == "init") {
+            return ssm::ssm_init() ? 0 : 1;
+        }
         if (subcmd_name == "new") {
             const std::string name = *subcmd_matches->get_one("NAME");
             return ssm::create_snippet(name) ? 0 : 1;
