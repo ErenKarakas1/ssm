@@ -8,6 +8,7 @@ Simple Snippet Manager
 Usage: ssm <COMMAND> [OPTIONS]
 
 Commands:
+    init    Initialize ssm directory and database
     new     Create a new snippet
     ls      List all snippets
     rm      Remove a snippet
@@ -17,6 +18,10 @@ Commands:
 Options:
     -h, --help    Show this help message
 ```
+
+`ssm init` initializes the snippet directory and database, so it should be run first.
+
+---
 
 Subcommands also have help messages.
 
@@ -28,8 +33,9 @@ Usage: ssm new <NAME> [OPTIONS]
 Options:
     -h, --help    Show this help message
 ```
+---
 
-Snippets are stored in `~/.snippets/` by default.
+Snippets are stored in `~/.local/share/snippets/` by default.
 
 `ssm` expects `HOME` environment variable to be set.
 

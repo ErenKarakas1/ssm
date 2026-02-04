@@ -4,7 +4,7 @@ CCFLAGS = -Wall -Wextra -Wpedantic -Wcast-align -Wcast-qual -Wconversion -Wdepre
 	      -Wdouble-promotion -Wduplicated-branches -Wduplicated-cond -Wfloat-equal -Wformat=2 -Wformat-signedness -Wlogical-op -Wmissing-noreturn \
 	      -Wnon-virtual-dtor -Wmissing-declarations -Wnull-dereference -Wnrvo -Wold-style-cast -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo \
 	      -Wstrict-aliasing=2 -Wstrict-overflow=2 -Wswitch-default -Wtype-limits -Wsuggest-attribute=returns_nonnull -Wundef -Wno-unknown-warning-option \
-	      -Wuseless-cast -fstrict-aliasing -fanalyzer
+	      -Wuseless-cast -fstrict-aliasing
 
 CFLAGS = -I./include -I./thirdparty -DSQLITE_OMIT_LOAD_EXTENSION
 CXXFLAGS = -std=c++23 $(CCFLAGS) $(CFLAGS)
