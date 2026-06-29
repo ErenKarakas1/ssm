@@ -7,7 +7,7 @@ CCFLAGS = -Wall -Wextra -Wpedantic -Wcast-align -Wcast-qual -Wconversion -Wdepre
 	      -Wuseless-cast -fstrict-aliasing
 
 CFLAGS = -I./include -I./thirdparty -DSQLITE_OMIT_LOAD_EXTENSION
-CXXFLAGS = -std=c++23 $(CCFLAGS) $(CFLAGS)
+CXXFLAGS = -std=c++26 $(CCFLAGS) $(CFLAGS)
 DEBUG_FLAGS = -Og -ggdb3
 RELEASE_FLAGS = -O3 -march=native
 TARGET = ssm

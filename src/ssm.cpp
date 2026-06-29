@@ -69,14 +69,14 @@ std::vector<std::string> snippet_names() {
         return {};
     }
 
-    std::vector<std::string> names;
-
     constexpr auto select_sql = "SELECT name FROM file ORDER BY id ASC;";
     const ssm_sqlite3::stmt_handle stmt = sqlite.prepare(select_sql);
     if (!stmt) {
         std::println(stderr, "Failed to prepare statement: {}", sqlite.errmsg());
         return {};
     }
+
+    std::vector<std::string> names;
 
     for (int ret = sqlite3_step(stmt.get()); ret == SQLITE_ROW; ret = sqlite3_step(stmt.get())) {
         const char* text = reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 0));
@@ -158,6 +158,7 @@ bool ssm_init() {
         return false;
     }
 
+    std::println("Database file created at '{}'", db_path.string());
     return true;
 }
 
